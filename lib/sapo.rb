@@ -9,10 +9,12 @@ module SAPO
   API_URL = 'http://services.sapo.pt/'
   
   def self.get_xml(call)
+    # puts "[+] #{API_URL + URI.escape(call)}"
     Nokogiri::XML(open( API_URL + URI.escape(call) )).root
   end
   
   def self.get_json(call)
-    JSON.parse(open( API_URL + URI.escape(call) ))
+    # puts "[+] #{API_URL + URI.escape(call)}"
+    JSON.parse(open( API_URL + URI.escape(call) ).read)
   end
 end

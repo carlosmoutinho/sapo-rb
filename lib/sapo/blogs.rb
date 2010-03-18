@@ -1,27 +1,29 @@
 require File.join(File.dirname(__FILE__), '..', 'sapo.rb')
-require 'open-uri'
-require 'json'
 
 module SAPO
   module Blogs
     class Post
-      attr_accessor :title, :link, :author, :created_at, :description, :blog
-    end
-    
-    # FIXME: add sort and pagination options
-    def self.search(query)
-      output = open("http://services.sapo.pt/Blogs/JSON/Search?q=#{CGI.escape(query)}").read
-      json = JSON.parse(output)
+      attr_reader :title, :link, :author, :pub_date, :description, :source    
       
-      return json["rss"]["channel"]["item"].map do |p|
-        post = Post.new
-        post.title      = p["title"]
-        post.link       = p["link"]
-        post.author     = p["author"]
-        post.created_at = p["sapo:created"]
-        post.description= p["description"]
-        post.blog       = p["source"]["url"]
-        post
+      def initialize(*params)
+        params = Hash[*params]
+        params.each { |k,v| eval "@#{k} = v.to_s" }
+      end
+      
+      def self.find(*params)
+        # Use '+' to separte query words. Example: 'note+leave' instead of 'note leave'
+        # TODO: Find the perPage parameter to pass. Actually it always returns 10 results.
+        params = Hash[*params]
+        params[:query] ||= ''
+        params[:limit] ||= ''
+        return [] if params[:query].empty? || params[:query] =~ /\s+/
+        doc = SAPO::get_xml("Blogs/RSS/Search?q=#{params[:query]}&limit=#{params[:limit]}")      
+        doc.css('item').map do |p|
+          self.new( :title => p.at('title').text, :link => p.at('link').text,
+                    :author => p.at('author').text, :pub_date => p.at('pubDate').text,
+                    :description => p.at('description').text, :source => p.at('source')['url']
+                  )
+        end
       end
     end
   end

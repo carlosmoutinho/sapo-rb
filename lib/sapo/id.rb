@@ -1,6 +1,4 @@
 require File.join(File.dirname(__FILE__), '..', 'sapo.rb')
-require 'rexml/document'
-require 'net/https'
 
 module SAPO
   class ID

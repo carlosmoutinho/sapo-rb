@@ -5,42 +5,27 @@ require 'json'
 module SAPO
   module Photos
     class Photo
-      attr_accessor :title, :description, :link, :published_at, :src
+      attr_reader :title, :description, :link, :pub_date, :source
       
-      def initialize(attrs = {})
-        @title        = attrs[:title]
-        @link         = attrs[:link]
-        @src          = attrs[:src]
-        @published_at = attrs[:published_at]
-        @description  = attrs[:description]
+      def initialize(*params)
+        params = Hash[*params]
+        params.each { |k,v| eval "@#{k} = v.to_s" }
       end
-    end
     
-    # FIXME: add sort and pagination options
-    def self.search(options = {})
-      if options.is_a?(String)
-        output = open("http://services.sapo.pt/Photos/JSON?tag=#{options}").read
-      elsif options.is_a?(Hash)
-        options = {:user => "", :tag => ""}.merge(options)
-        if options[:user] != "" and options[:tag] != ""
-          output = open("http://services.sapo.pt/Photos/JSON?u=#{options[:user]}&tag=#{options[:tag]}").read
-        elsif options[:user] == "" and options[:tag] != ""
-          output = open("http://services.sapo.pt/Photos/JSON?tag=#{options[:tag]}").read
-        elsif options[:user] != "" and options[:tag] == ""
-          output = open("http://services.sapo.pt/Photos/JSON?u=#{options[:user]}").read
-        else
-          return []
+      def self.find(*params)
+        params = Hash[*params]
+        params[:user] ||= ''
+        params[:tag]  ||= ''
+
+        return [] if params[:user].empty? && params[:tag].empty?
+        doc = SAPO::get_xml("Photos/RSS?u=#{params[:user]}&tag=#{params[:tag]}")      
+        
+        doc.css('item').map do |p|
+          self.new( :title => p.at('title').text, :source => p.at('fotoURL').text,
+                    :description => p.at('description').text, :pub_date => p.at('pubDate').text,
+                    :link => p.at('link').text
+                  )
         end
-      else
-        return []
-      end
-      
-      json = JSON.parse(output)
-      
-      return [] if json["rss"]["channel"]["item"].nil?
-      
-      return json["rss"]["channel"]["item"].map do |p|
-        Photo.new(:title => p["title"]["cdata"], :src => p["fotoURL"], :description => p["description"]["cdata"], :published_at => p["pubDate"], :link => p["link"]["value"])
       end
     end
   end

@@ -7,11 +7,7 @@ module SAPO
 
       def initialize(*params)
         params = Hash[*params]
-        @title = params[:title]
-        @line1 = params[:line1]
-        @line2 = params[:line2]
-        @display_url = params[:display_url]
-        @ad_link_url = params[:ad_link_url]
+        params.each { |k,v| eval "@#{k} = v" }
       end
       
       def self.find(*params)
@@ -19,7 +15,7 @@ module SAPO
         params[:query] ||= ''
         return [] if params[:query].empty? || params[:query] =~ /\s+/
         doc = SAPO::get_xml("AdWords/JSON?q=#{params[:query]}&o=xml")
-        doc.css('AdResults Result').map do |ad|
+        doc.css('AdResults Result').to_a.map do |ad|
           self.new( :title => ad.at('Title').text, :line1 => ad.at('Line1').text,
                     :line2 => ad.at('Line2').text, :display_url => ad.at('DisplayURL').text,
                     :ad_link_url => ad.at('AdLinkURL').text

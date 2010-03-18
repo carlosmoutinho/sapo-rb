@@ -7,12 +7,7 @@ module SAPO
       
       def initialize(*params)
         params = Hash[*params]
-        @title = params[:title]
-        @link = params[:link]
-        @category = params[:category]
-        @image = params[:image]
-        @pub_date = params[:pub_date]
-        @comments = params[:comments]
+        params.each { |k,v| eval "@#{k} = v" }
       end
       
       def self.find(*params)
@@ -33,10 +28,10 @@ module SAPO
         call << "Model:#{params[:model]}" unless params[:model].empty?
         
         doc = SAPO::get_xml("#{call}&sort=#{params[:sort]}")
-        doc.css('item').map do |a|
+        doc.css('item').to_a.map do |a|
           self.new( :title => a.at('title').text, :link => a.at('link').text,
-                   :category => a.at('category').text, :image => a.at('enclosure')['url'],
-                   :pub_date => a.at('pubDate').text, :comments => a.at('comments').text
+                    :category => a.at('category').text, :image => a.at('enclosure')['url'],
+                    :pub_date => a.at('pubDate').text, :comments => a.at('comments').text
                   )
         end
       end
