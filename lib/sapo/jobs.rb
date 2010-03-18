@@ -2,22 +2,18 @@ require File.join(File.dirname(__FILE__), '..', 'sapo.rb')
 
 module SAPO
   module Jobs
-    class Offer
+    class Offer < Sapo::Base
       attr_reader :title, :link, :region, :pub_date, :description
       
-      def initialize(*params)
-        params = Hash[*params]
-        params.each { |k,v| eval "@#{k} = v.to_s" }
-      end
       
-      def self.find(*params)
+      def self.find(*args)
         # Use '+' to separte query words. Example: 'note+leave' instead of 'note leave'
         # TODO: Find the perPage parameter to pass. Actually it always returns 10 results.
-        params = Hash[*params]
-        params[:query] ||= ''
+        args = Hash[*args]
+        args[:query] ||= ''
         
-        return [] if params[:query].empty? || params[:query] =~ /\s+/
-        doc = SAPO::get_xml("JobOffers/RSS/Search?q=#{params[:query]}")
+        return [] if args[:query].empty? || args[:query] =~ /\s+/
+        doc = SAPO::get_xml("JobOffers/RSS/Search?q=#{args[:query]}")
          
         doc.css('item').map do |p|
           self.new( :title => p.at('title').text, :link => p.at('link').text,
