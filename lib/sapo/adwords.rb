@@ -7,7 +7,7 @@ module SAPO
 
       def initialize(*params)
         params = Hash[*params]
-        params.each { |k,v| eval "@#{k} = v" }
+        params.each { |k,v| eval "@#{k} = v.to_s" }
       end
       
       def self.find(*params)

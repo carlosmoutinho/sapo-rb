@@ -1,8 +1,9 @@
 require File.join(File.dirname(__FILE__), '..', 'sapo.rb')
+require 'fileutils'
 
 module SAPO
   class Captcha
-    attr_reader :id, :code, :msg
+    attr_reader :id, :code, :msg, :file
     
     def self.get(*params)
       self.new(*params)
@@ -22,14 +23,24 @@ module SAPO
     def show(*params)
       params = Hash[*params]
       params[:font] ||= ''
-      params[:color] ||= ''
+      params[:textcolor] ||= ''
+      params[:background] ||= ''
       params[:size] ||= ''
-      rand_name = "captcha_#{rand(100000)}.png"
-      open(rand_name, "w") do |file|
-        file << open("http://services.sapo.pt/Captcha/Show?id=#{@id}&font=#{params[:font]}&color=#{params[:color]}&size=#{params[:size]}").read
-        puts "File saved to #{rand_name}"
+      @file ||= "captcha_#{rand(100000)}.png"
+      open(@file, "w") do |file|
+        file << open("http://services.sapo.pt/Captcha/Show?id=#{@id}&font=#{params[:font]}&background=#{params[:background]}&textcolor=#{params[:textcolor]}&size=#{params[:size]}").read
+        puts "File saved to #{@file}"
       end
     end
-  
+    
+    def file=(name)
+      return @file unless name.is_a?(String)
+      if @file.nil?
+        FileUtils.touch name
+      else
+        FileUtils.mv @file, name
+      end
+      @file = name
+    end
   end
 end
