@@ -14,7 +14,7 @@ module SAPO
       args[:mode]   ||= ''
       args[:ttl]    ||= ''
       args[:length] ||= ''
-      doc = SAPO::get_xml("Captcha/Get?mode=#{args[:mode]}&ttl=#{args[:ttl]}&length=#{args[:length]}")
+      doc = SAPO::Base.get_xml("Captcha/Get?mode=#{args[:mode]}&ttl=#{args[:ttl]}&length=#{args[:length]}")
       @id = doc.at('id').text
       @code = doc.at('code').text
       @msg = doc.at('msg').text

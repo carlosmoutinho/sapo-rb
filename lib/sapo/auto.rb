@@ -4,6 +4,7 @@ module SAPO
   module Auto
     class Car < SAPO::Base
       attr_reader :title, :link, :category, :image, :pub_date, :comments
+      private_class_method :new
       
       def self.find(*args)
         args = Hash[*args]
@@ -22,7 +23,7 @@ module SAPO
         call << '+' if arg_count == 1
         call << "Model:#{args[:model]}" unless args[:model].empty?
         
-        doc = SAPO::get_xml("#{call}&sort=#{args[:sort]}")
+        doc = SAPO::Base.get_xml("#{call}&sort=#{args[:sort]}")
         doc.css('item').to_a.map do |a|
           self.new( :title => a.at('title').text, :link => a.at('link').text,
                     :category => a.at('category').text, :image => a.at('enclosure')['url'],

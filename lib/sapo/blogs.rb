@@ -4,6 +4,7 @@ module SAPO
   module Blogs
     class Post < SAPO::Base
       attr_reader :title, :link, :author, :pub_date, :description, :source    
+      private_class_method :new
       
       def self.find(*args)
         # Use '+' to separte query words. Example: 'note+leave' instead of 'note leave'
@@ -12,7 +13,7 @@ module SAPO
         args[:query] ||= ''
         args[:limit] ||= ''
         return [] if args[:query].empty? || args[:query] =~ /\s+/
-        doc = SAPO::get_xml("Blogs/RSS/Search?q=#{args[:query]}&limit=#{args[:limit]}")      
+        doc = SAPO::Base.get_xml("Blogs/RSS/Search?q=#{args[:query]}&limit=#{args[:limit]}")      
         doc.css('item').map do |p|
           self.new( :title => p.at('title').text, :link => p.at('link').text,
                     :author => p.at('author').text, :pub_date => p.at('pubDate').text,
