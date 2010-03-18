@@ -1,27 +1,30 @@
 require File.join(File.dirname(__FILE__), '..', 'sapo.rb')
-require 'open-uri'
-require 'json'
 
 module SAPO
   module AdWords
     class Ad
-      attr_accessor :display_url, :destination_url, :description_1, :description_2
-    end
-    
-    def self.search(query)
-      output = open("http://services.sapo.pt/AdWords/JSON?q=#{query}&o=json").read
-      linhas = output.split("\n")
-      linhas[0] = "["
-      linhas[linhas.size-1] = "]"
-      json_string = linhas.join("\n")
-      json = JSON.parse json_string
-      return json.to_a.map do |a|
-        ad = Ad.new
-        ad.display_url = a["l"]
-        ad.destination_url = a["u"]
-        ad.description_1 = a["t"]
-        ad.description_2 = a["d"]
-        ad
+      attr_reader :title, :line1, :line2, :display_url, :ad_link_url
+
+      def initialize(*params)
+        params = Hash[*params]
+        @title = params[:title]
+        @line1 = params[:line1]
+        @line2 = params[:line2]
+        @display_url = params[:display_url]
+        @ad_link_url = params[:ad_link_url]
+      end
+      
+      def self.find(*params)
+        params = Hash[*params]
+        params[:query] ||= ''
+        return [] if params[:query].empty? || params[:query] =~ /\s+/
+        doc = SAPO::get_xml("AdWords/JSON?q=#{params[:query]}&o=xml")
+        doc.css('AdResults Result').map do |ad|
+          self.new( :title => ad.at('Title').text, :line1 => ad.at('Line1').text,
+                    :line2 => ad.at('Line2').text, :display_url => ad.at('DisplayURL').text,
+                    :ad_link_url => ad.at('AdLinkURL').text
+                  )
+        end
       end
     end
   end
