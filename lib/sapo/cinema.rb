@@ -1,12 +1,32 @@
 require File.join(File.dirname(__FILE__), '..', 'sapo.rb')
-require 'ostruct'
 
 module SAPO
   module Cinemas
     
     class Theater < SAPO::Base
-      attr_reader :id, :name, :url, :ticket_url, :phone, :country, :district,
-                  :municipality, :latitude, :longitude, :address, :zipcode
+      attr_reader :id, :name, :url, :ticket_office_url, :phone, :country, :district,
+                  :municipality, :latitude, :longitude, :address, :zipcode, :created_at
+      private_class_method :new
+      
+      def self.find(*args)
+        args = Hash[*args]
+        args[:id] = args[:id].to_s
+        return [] if args[:id].empty?
+        doc = SAPO::Base.get_xml("Cinema/GetTheaterById?Id=#{args[:id]}")
+        new :id => doc.at('Id').text, :name => doc.at('Name').text,
+            :url => doc.at('URL').text, :ticket_office_url => doc.at('TicketOfficeURL').text,
+            :phone => doc.at('Phone').text, :country => doc.at('Country').children.last.text,
+            :district => doc.at('District').children.last.text,
+            :municipality => doc.at('Municipality').children.last.text,
+            :latitude => doc.at('Latitude').text, :longitude  => doc.at('Longitude').text,
+            :address => doc.at('Address').text,
+            :zipcode => doc.at('ZipCode').text + '-' + doc.at('ZipCodeSufix').text,
+            :created_at => doc.at('CreateDate').text          
+     # rescue Exception => exc
+      #  puts "Something went wrong: #{exc}"
+       # return nil
+      end
+    
     end
     
     class Genre < SAPO::Base
@@ -74,7 +94,7 @@ module SAPO
 
     end
     
-    class Role
+    class Role < SAPO::Base
       attr_reader :id, :name
       private_class_method :new
       
@@ -84,11 +104,11 @@ module SAPO
         if !args.nil?
           return roles.select do |r|
             if args[:id] && args[:name]
-              r[:name].downcase.include?(args[:name].to_s.downcase) && r[:id] == args[:id].to_s
+              r.name.downcase.include?(args[:name].to_s.downcase) && r.id == args[:id].to_s
             elsif !args[:name] && args[:id]
-              r[:id] == args[:id].to_s
+              r.id == args[:id].to_s
             elsif !args[:id] && args[:name]
-              r[:name].downcase.include?(args[:name].to_s.downcase)
+              r.name.downcase.include?(args[:name].to_s.downcase)
             else
               false
             end
@@ -96,11 +116,14 @@ module SAPO
         else
           []
         end
+      rescue Exception => exc
+        puts "Something went wrong: #{exc}"
+        return nil
       end
       
       def self.all
-        doc = get_xml("Cinema/GetContributorRoles?RecordsPerPage=30")
-        doc.at('ContributorRoles').children.map { |r| {:id => r.children.first.text, :name => r.children.last.text} }
+        doc = SAPO::Base.get_xml("Cinema/GetContributorRoles?RecordsPerPage=30")
+        doc.at('ContributorRoles').children.map { |r| new(:id => r.children.first.text, :name => r.children.last.text) }
       end
     end
     
