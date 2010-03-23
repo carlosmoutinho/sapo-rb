@@ -3,11 +3,14 @@ require File.join(File.dirname(__FILE__), '..', 'sapo.rb')
 module SAPO
   module Blogs
     class Post < SAPO::Base
-      def self.create(url, root)
-        SAPO::Base.get_xml(url).css(root).map do |doc|
+       def self.create(data, root)
+          data = data.is_a?(String) ? SAPO::Base.get_xml(data) : data
+          data.css(root).map do |doc|
           new :title => doc.at('title'), :link => doc.at('link'),
               :author => doc.at('author'), :pub_date => doc.at('pubDate'),
-              :description => doc.at('description'), :source => doc.at('source')['url']
+              :description => doc.at('description'), :source => doc.at('source')['url'],
+              :doc => doc
+              
         end
       rescue Exception => exc
         warn exc

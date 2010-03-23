@@ -3,9 +3,10 @@ require File.join(File.dirname(__FILE__), '..', 'sapo.rb')
 module SAPO
   module Cinemas
     
-    class Theater < SAPO::Base 
-      def self.create(url, root)
-        SAPO::Base.get_xml(url).css(root).map do |doc|
+    class Theater < SAPO::Base
+      def self.create(data, root)
+        data = data.is_a?(String) ? SAPO::Base.get_xml(data) : data
+        data.css(root).map do |doc|
           new :id => doc.at('Id'), :name => doc.at('Name'),
               :url => doc.at('URL'), :ticket_office_url => doc.at('TicketOfficeURL'),
               :phone => doc.at('Phone'), :country => doc.at('Country').children.last,
@@ -14,7 +15,7 @@ module SAPO
               :latitude => doc.at('Latitude'), :longitude  => doc.at('Longitude'),
               :address => doc.at('Address'),
               :zip_code_prefix => doc.at('ZipCode'), :zip_code_sufix => doc.at('ZipCodeSufix'),
-              :create_date => doc.at('CreateDate')
+              :create_date => doc.at('CreateDate'), :doc => doc
         end
       end
       private_class_method :new, :create
@@ -23,7 +24,11 @@ module SAPO
         args = Hash[*args]
         args[:id] = args[:id].to_s
         return [] if args[:id].empty?
-        create("Cinema/GetTheaterById?Id=#{args[:id]}", 'GetTheaterByIdResult')
+        create("Cinema/GetTheaterById?Id=#{args[:id]}&IncludeShowTimes=true", 'GetTheaterByIdResult')
+      end
+      
+      def movies
+        @movies ||= Movie.create(doc, 'MovieShowTimesList MovieShowTimes')
       end
     end
     
@@ -37,8 +42,9 @@ module SAPO
     end
     
     class Movie < SAPO::Base      
-      def self.create(url, root)
-        SAPO::Base.get_xml(url).css(root).map do |doc|
+       def self.create(data, root)
+          data = data.is_a?(String) ? SAPO::Base.get_xml(data) : data
+          data.css(root).map do |doc|
           new :id => doc.at('Id'), :title => doc.at('Title'), :year => doc.at('Year'),
                :country => doc.css('ProductionCountries Country').children.last,
                :runtime => doc.at('Runtime'), :synopsis => doc.at('Synopsis'),
@@ -49,10 +55,11 @@ module SAPO
                              :date => doc.css('Release ReleaseDate'),
                              :rating => doc.css('Release Rating Name'),
                              :authority => doc.css('Release Authority Name')
-                           }
+                           },
+               :doc => doc
         end
       end
-      private_class_method :new, :create 
+      private_class_method :new 
       
       def self.find(*args)
         args = Hash[*args]
@@ -75,20 +82,26 @@ module SAPO
         return nil
       end
       
+      def persons
+        @persons ||= Person.create(doc, 'Contributors Contributor')
+      end
+      
     end
   
     class Person < SAPO::Base
-      def self.create(url, root)
-        SAPO::Base.get_xml(url).css(root).map do |doc|
+       def self.create(data, root)
+          data = data.is_a?(String) ? SAPO::Base.get_xml(data) : data
+          data.css(root).map do |doc|
           new :id => doc.at('Id'),
-              :name => doc.at('Name')
+              :name => doc.at('Name'),
+              :doc => doc
         end
       rescue Exception => exc
         warn exc
         nil
       end
       
-      private_class_method :new, :create
+      private_class_method :new
       
       def self.find(*args)
         args = Hash[*args]

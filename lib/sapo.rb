@@ -7,7 +7,6 @@ require 'ostruct'
 module SAPO
   VERSION = '0.0.5'
   API_URL = 'http://services.sapo.pt/'
-  
   class Base
     
     def self.get_xml(call)
@@ -23,10 +22,12 @@ module SAPO
           v.each do |k_,v_|
             eval "@#{k}.#{k_} = v_.respond_to?(:text) ? v_.text : v_"
           end
+        elsif k == :doc
+          self.class.__send__(:define_method, "#{k}") { v }
         else
-          instance_variable_set("@#{k}", v.respond_to?(:text) ? v.text : v)
+          instance_variable_set("@#{k}", (v.respond_to?(:text) && k.to_s != 'doc') ? v.text : v)
         end
-        self.class.__send__(:define_method, "#{k}") { eval("@#{k}") }
+        self.class.__send__(:define_method, "#{k}") { eval("@#{k}") } unless k == :doc
       end
     end
   end
