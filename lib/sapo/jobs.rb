@@ -2,9 +2,19 @@ require File.join(File.dirname(__FILE__), '..', 'sapo.rb')
 
 module SAPO
   module Jobs
-    class Offer < Sapo::Base
-      attr_reader :title, :link, :region, :pub_date, :description
-      private_class_method :new
+    class Offer < SAPO::Base
+      def self.create(url, root)
+        SAPO::Base.get_xml(url).css(root).map do |doc|
+          new :title => doc.at('title'), :link => doc.at('link'),
+              :region => doc.text.split("\n").last, :pub_date => doc.at('pubDate'),
+              :description => doc.at('description')
+        end
+      rescue Exception => exc
+        warn exc
+        nil
+      end
+      
+      private_class_method :new, :create
       
       def self.find(*args)
         # Use '+' to separte query words. Example: 'note+leave' instead of 'note leave'
@@ -13,14 +23,7 @@ module SAPO
         args[:query] ||= ''
         
         return [] if args[:query].empty? || args[:query] =~ /\s+/
-        doc = SAPO::Base.get_xml("JobOffers/RSS/Search?q=#{args[:query]}")
-         
-        doc.css('item').map do |p|
-          self.new( :title => p.at('title').text, :link => p.at('link').text,
-                    :region => p.text.split("\n").last, :pub_date => p.at('pubDate').text,
-                    :description => p.at('description').text
-                  )
-        end
+        create("JobOffers/RSS/Search?q=#{args[:query]}", 'item')
       end
     end    
   end

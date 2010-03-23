@@ -3,8 +3,18 @@ require File.join(File.dirname(__FILE__), '..', 'sapo.rb')
 module SAPO
   module Auto
     class Car < SAPO::Base
-      attr_reader :title, :link, :category, :image, :pub_date, :comments
-      private_class_method :new
+      def self.create(url, root)
+        SAPO::Base.get_xml(url).css(root).map do |doc|
+          new :title => doc.at('title'), :link => doc.at('link'),
+              :category => doc.at('category'), :image => doc.at('enclosure')['url'],
+              :pub_date => doc.at('pubDate'), :comments => doc.at('comments')
+        end
+      rescue Exception => exc
+        warn exc
+        nil
+      end
+      
+      private_class_method :new, :create
       
       def self.find(*args)
         args = Hash[*args]
@@ -22,14 +32,8 @@ module SAPO
         end
         call << '+' if arg_count == 1
         call << "Model:#{args[:model]}" unless args[:model].empty?
-        
-        doc = SAPO::Base.get_xml("#{call}&sort=#{args[:sort]}")
-        doc.css('item').to_a.map do |a|
-          self.new( :title => a.at('title').text, :link => a.at('link').text,
-                    :category => a.at('category').text, :image => a.at('enclosure')['url'],
-                    :pub_date => a.at('pubDate').text, :comments => a.at('comments').text
-                  )
-        end
+        puts "#{call}&sort=#{args[:sort]}"
+        create("#{call}&sort=#{args[:sort]}", 'item')
       end
     end
   end

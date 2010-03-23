@@ -2,7 +2,6 @@ require 'rubygems'
 require 'open-uri'
 require 'uri'
 require 'nokogiri'
-require 'json'
 require 'ostruct'
 
 module SAPO
@@ -15,28 +14,19 @@ module SAPO
       # puts "[+] #{API_URL + URI.escape(call)}"
       Nokogiri::XML(open( API_URL + URI.escape(call) )).root
     end
-
-    def self.get_json(call)
-      # puts "[+] #{API_URL + URI.escape(call)}"
-      JSON.parse(open( API_URL + URI.escape(call) ).read)
-    end
-    
-    def self.new(*args)
-      super
-    rescue Exception => exc
-      puts "Ooopss. Something went wrong: #{exc.inspect}"
-      return nil
-    end
     
     def initialize(*args)
       args = Hash[*args]
       args.each do |k,v|
         if v.is_a?(Hash)
-          eval("@#{k} = OpenStruct.new")
-          v.each { |k_, v_| eval("@#{k}.#{k_} = v_") }
+          instance_variable_set("@#{k}", OpenStruct.new)
+          v.each do |k_,v_|
+            eval "@#{k}.#{k_} = v_.respond_to?(:text) ? v_.text : v_"
+          end
         else
-          instance_variable_set("@#{k}", v)
+          instance_variable_set("@#{k}", v.respond_to?(:text) ? v.text : v)
         end
+        self.class.__send__(:define_method, "#{k}") { eval("@#{k}") }
       end
     end
   end
