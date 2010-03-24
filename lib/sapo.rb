@@ -23,9 +23,9 @@ module SAPO
             eval "@#{k}.#{k_} = v_.respond_to?(:text) ? v_.text : v_"
           end
         elsif k == :doc
-          self.class.__send__(:define_method, "#{k}") { v }
+          self.class.__send__(:define_method, "doc") { v }
         else
-          instance_variable_set("@#{k}", (v.respond_to?(:text) && k.to_s != 'doc') ? v.text : v)
+          instance_variable_set("@#{k}", v.respond_to?(:text) ? v.text : v)
         end
         self.class.__send__(:define_method, "#{k}") { eval("@#{k}") } unless k == :doc
       end

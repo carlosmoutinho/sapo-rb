@@ -86,12 +86,36 @@ module SAPO
         @persons ||= Person.create(doc, 'Contributors Contributor')
       end
       
+      def media
+        @media ||= Media.create(doc, 'Media MediaItem')      
+      end
+      
     end
+    
+    class Media < SAPO::Base
+      def self.create(data, root)
+        data = data.is_a?(String) ? SAPO::Base.get_xml(data) : data
+        data.css(root).map do |doc|
+          new :type => doc.at('Type'), :category => doc.at('Category'),
+              :url => doc.at('URL'), :extension => doc.at('Extension'),
+              :rand_name => doc.at('RandName'),
+              :thumbnails => doc.css('Thumbnail').map { |t|
+                OpenStruct.new({ :name => t.at('Name').text, :url => t.at('URL').text,
+                                 :width => t.at('Width').text, :height => t.at('Height').text
+                              })
+              }, :doc => doc
+        end
+      rescue Exception => exc
+        warn exc
+        nil
+      end
+    end
+        
   
     class Person < SAPO::Base
-       def self.create(data, root)
-          data = data.is_a?(String) ? SAPO::Base.get_xml(data) : data
-          data.css(root).map do |doc|
+      def self.create(data, root)
+        data = data.is_a?(String) ? SAPO::Base.get_xml(data) : data
+        data.css(root).map do |doc|
           new :id => doc.at('Id'),
               :name => doc.at('Name'),
               :doc => doc
@@ -106,13 +130,13 @@ module SAPO
       def self.find(*args)
         args = Hash[*args]
         args[:id] = args[:id].to_s
+        
         create("Cinema/GetPersonById?Id=#{args[:id]}", 'GetPersonByIdResult')
       end
 
     end
     
     class Role < SAPO::Base
-      attr_reader :id, :name
       private_class_method :new
       
       def self.find(*args)
