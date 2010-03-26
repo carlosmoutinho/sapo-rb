@@ -42,21 +42,21 @@ module SAPO
     end
     
     class Movie < SAPO::Base      
-       def self.create(data, root)
-          data = data.is_a?(String) ? SAPO::Base.get_xml(data) : data
-          data.css(root).map do |doc|
-          new :id => doc.at('Id'), :title => doc.at('Title'), :year => doc.at('Year'),
-               :country => doc.css('ProductionCountries Country').children.last,
-               :runtime => doc.at('Runtime'), :synopsis => doc.at('Synopsis'),
-               :genres => doc.css('Genres Genre').map { |ge| Genre.new(ge.at('Id').text, ge.at('Name').text) },
-               :release => { :country => doc.css('Release Country').children.last,
-                             :title => doc.css('Release Title'),
-                             :distributor => doc.css('Release Distributor'),
-                             :date => doc.css('Release ReleaseDate'),
-                             :rating => doc.css('Release Rating Name'),
-                             :authority => doc.css('Release Authority Name')
-                           },
-               :doc => doc
+      def self.create(data, root)
+        data = data.is_a?(String) ? SAPO::Base.get_xml(data) : data
+        data.css(root).map do |doc|
+        new :id => doc.at('Id'), :title => doc.at('Title'), :year => doc.at('Year'),
+             :country => doc.css('ProductionCountries Country').children.last,
+             :runtime => doc.at('Runtime'), :synopsis => doc.at('Synopsis'),
+             :genres => doc.css('Genres Genre').map { |ge| Genre.new(ge.at('Id').text, ge.at('Name').text) },
+             :release => { :country => doc.css('Release Country').children.last,
+                           :title => doc.css('Release Title'),
+                           :distributor => doc.css('Release Distributor'),
+                           :date => doc.css('Release ReleaseDate'),
+                           :rating => doc.css('Release Rating Name'),
+                           :authority => doc.css('Release Authority Name')
+                         },
+             :doc => doc
         end
       end
       private_class_method :new 
@@ -103,19 +103,25 @@ module SAPO
           new :type => doc.at('Type'), :category => doc.at('Category'),
               :url => doc.at('URL'), :extension => doc.at('Extension'),
               :rand_name => doc.at('RandName'),
-              :thumbnails => doc.css('Thumbnail').map { |t|
-                OpenStruct.new({ :name => t.at('Name').text, :url => t.at('URL').text,
-                                 :width => t.at('Width').text, :height => t.at('Height').text
-                              })
-              }, :doc => doc
+              :doc => doc
         end
       rescue Exception => exc
         warn exc
         nil
       end
+      
+      def thumbnails
+        doc.css('Thumbnail').map do |t|
+          OpenStruct.new({
+            :name => t.at('Name').text, :url => t.at('URL').text,
+            :width => t.at('Width').text, :height => t.at('Height').text
+          })
+        end
+      end
+      
     end
-        
-  
+      
+    
     class Person < SAPO::Base
       def self.create(data, root)
         data = data.is_a?(String) ? SAPO::Base.get_xml(data) : data

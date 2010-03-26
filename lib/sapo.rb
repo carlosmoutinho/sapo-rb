@@ -14,6 +14,14 @@ module SAPO
       Nokogiri::XML(open( API_URL + URI.escape(call) )).root
     end
     
+    def inspect
+      str = "#<#{self.class} "
+      instance_variables.each do |i|
+        str << "#{i}=#{eval(i).inspect}, " unless i == "@doc"
+      end
+      str << ">"
+    end
+    
     def initialize(*args)
       args = Hash[*args]
       args.each do |k,v|
@@ -22,12 +30,10 @@ module SAPO
           v.each do |k_,v_|
             eval "@#{k}.#{k_} = v_.respond_to?(:text) ? v_.text : v_"
           end
-        elsif k == :doc
-          self.class.__send__(:define_method, "doc") { v }
         else
-          instance_variable_set("@#{k}", v.respond_to?(:text) ? v.text : v)
+          instance_variable_set("@#{k}", v.respond_to?(:text) && k != :doc ? v.text : v)
         end
-        self.class.__send__(:define_method, "#{k}") { eval("@#{k}") } unless k == :doc
+        self.class.__send__(:define_method, "#{k}") { eval("@#{k}") }
       end
     end
   end
