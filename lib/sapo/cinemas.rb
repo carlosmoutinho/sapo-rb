@@ -90,6 +90,10 @@ module SAPO
         @media ||= Media.create(doc, 'Media MediaItem')      
       end
       
+      def show_times
+        @show_times ||= doc.css('TimeStart').map(&:text)
+      end
+      
     end
     
     class Media < SAPO::Base
