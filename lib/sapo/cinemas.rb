@@ -32,15 +32,6 @@ module SAPO
       end
     end
     
-    class Genre
-      attr_reader :id, :name
-      
-      def initialize(id, name)
-        @id = id
-        @name = name
-      end
-    end
-    
     class Movie < SAPO::Base      
       def self.create(data, root)
         data = data.is_a?(String) ? SAPO::Base.get_xml(data) : data
@@ -48,7 +39,6 @@ module SAPO
         new :id => doc.at('Id'), :title => doc.at('Title'), :year => doc.at('Year'),
              :country => doc.css('ProductionCountries Country').children.last,
              :runtime => doc.at('Runtime'), :synopsis => doc.at('Synopsis'),
-             :genres => doc.css('Genres Genre').map { |ge| Genre.new(ge.at('Id').text, ge.at('Name').text) },
              :release => { :country => doc.css('Release Country').children.last,
                            :title => doc.css('Release Title'),
                            :distributor => doc.css('Release Distributor'),
@@ -92,6 +82,12 @@ module SAPO
       
       def show_times
         @show_times ||= doc.css('TimeStart').map(&:text)
+      end
+      
+      def genres
+        @genres ||= doc.css('Genres Genre').map do |ge|
+          OpenStruct.new({ :id => ge.at('Id').text, :name => ge.at('Name').text })
+        end
       end
       
     end

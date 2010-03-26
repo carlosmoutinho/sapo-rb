@@ -17,7 +17,9 @@ module SAPO
     def inspect
       str = "#<#{self.class} "
       instance_variables.each do |i|
-        str << "#{i}=#{eval(i).inspect}, " unless i == "@doc"
+        unless i == "@doc"
+          str << " #{i}=#{eval(i).inspect} "
+        end
       end
       str << ">"
     end
