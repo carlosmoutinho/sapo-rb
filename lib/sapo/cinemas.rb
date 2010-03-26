@@ -72,8 +72,21 @@ module SAPO
         return nil
       end
       
-      def persons
-        @persons ||= Person.create(doc, 'Contributors Contributor')
+      def contributors(role=nil)
+        @contributors ||= Contributor.create(doc, 'Contributors Contributor')
+        unless role.nil?
+          @contributors.select do |c|
+            if role.is_a?(Role)
+              c.roles.select { |r| r.id == role.id && r.name == role.name }.size > 0
+            elsif role.is_a?(String)
+              c.roles.select { |r| r.name.downcase.include?(role) }.size > 0
+            else
+              false
+            end
+          end
+        else
+          @contributors
+        end
       end
       
       def media
@@ -118,12 +131,12 @@ module SAPO
     end
       
     
-    class Person < SAPO::Base
+    class Contributor < SAPO::Base
       def self.create(data, root)
         data = data.is_a?(String) ? SAPO::Base.get_xml(data) : data
         data.css(root).map do |doc|
-          new :id => doc.at('Id'),
-              :name => doc.at('Name'),
+          new :id => doc.css('Person Id'),
+              :name => doc.at('Person Name'),
               :doc => doc
         end
       rescue Exception => exc
@@ -139,10 +152,25 @@ module SAPO
         
         create("Cinema/GetPersonById?Id=#{args[:id]}", 'GetPersonByIdResult')
       end
+      
+      def roles
+        @roles ||= Role.create(doc, 'Role')
+      end
 
     end
     
     class Role < SAPO::Base
+      def self.create(data, root)
+        data = data.is_a?(String) ? SAPO::Base.get_xml(data) : data
+        data.css(root).map do |doc|
+          new :id => doc.at('Id'),
+              :name => doc.at('Name')
+        end
+      rescue Exception => exc
+        warn exc
+        nil
+      end
+      
       private_class_method :new
       
       def self.find(*args)
